@@ -7,6 +7,6 @@ const express_1 = __importDefault(require("express"));
 const app = express_1.default();
 app.set("view engine", "ejs");
 app.use('/', require("./routes/ScreenFirst"));
-const listener = app.listen(process.env.PORT ? process.env.PORT : 8080, () => {
+const listener = app.listen(process.env.PORT ? process.env.PORT : 7777, () => {
     console.info(`Listening to ${listener.address().port}`);
 });

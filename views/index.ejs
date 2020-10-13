@@ -20,7 +20,7 @@
                 
                 <% if (!req.session.isLogged) { %>
                     <li class="nav-item">
-                        <a onclick="login()" class="nav-link">Login</a>
+                        <a onclick="login()" id="klikitit" class="nav-link">Login</a>
                     </li>
                 <% } else { %>
                     <li class="nav-item">
@@ -32,7 +32,8 @@
     </nav>
 
     <div class="jumbotron">
-    <form>
+    
+        <% if (!isLogged) { %>
         <div class="form-group">
             <label for="username">Username</label>
             <input type="text" id="username" required>
@@ -46,12 +47,21 @@
             <input type="email" id="email" required aria-describedby="emailInfo">
             <small id="emailInfo" class="form-text text-muted">We'll never share your email with anyone else!</small>
         </div>
-        <button onclick="login()" type="submit" class="btn btn-primary">Submit</button>
-    </form>
+        <button onclick="forceLink()" type="submit" class="btn btn-primary">Submit</button>
+    <% } else { %>
+        <h1>Hi <div class="namaUser"></div></h1>
+    <% } %>
 </div>
 
 
     <script>
+        
+        if (window.localStorage.getItem("token")) {
+            document.querySelector("[class=\"namaUser\"]").innerHTML = JSON.parse(window.localStorage.getItem("identify")).userName.replace(/\s/gi, "");
+        }
+        function forceLink() {
+            document.getElementById("klikitit").click();
+        }
         function logout() {
             swal({
                 title: "Are you sure want logout?",
@@ -61,7 +71,8 @@
                 if (clicked) {
                     window.localStorage.removeItem("token");
                     window.localStorage.removeItem("identify");
-                    window.open("/logout");
+                    window.open("/logout").close();
+                    window.location.reload();
                 } else {
                     swal({
                         title: "Nice choose!",
@@ -91,9 +102,9 @@
                 });
             }
             if (isEmpty(username) || isEmpty(password) || isEmpty(email)) {
-                swal('Empty not allowed', 'Enter all form value to register!', 'info');
-            } else {
-            swal({
+                return swal('Empty not allowed', 'Enter all form value to register!', 'info');
+            }
+           swal({
                 title: "Maintenance Alert",
                 text: "We can't be sure that login is broken or no.",
                 icon: "warning",
@@ -116,7 +127,7 @@
                             window.localStorage.setItem("token", result.result.token);
                             window.localStorage.setItem("identify", JSON.stringify(result.result.data));
                             swal.stopLoading();
-                            swal.close();
+                            window.location.reload();
                         }
                     });
                 } else {
@@ -130,7 +141,7 @@
                 }
             });
         }
-        }
+        
     </script>
 </body>
 </html>
