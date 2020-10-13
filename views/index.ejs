@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include("../layout/header.ejs"); %>
+    <script>
+        let isLogged = false;
+        const isLog = window.localStorage.getItem("isLogged");
+        if (!isLog && !window.localStorage.getItem("token")) { 
+            isLogged = false;
+             window.localStorage.setItem("isLogged", 0);
+            <% req.session.isLogged = false; %>
+            
+        }
+        fetch("/session_list?token=<%= config.env.password %>", {
+            method: "POST"
+        }).then((res) => res.json()).then((result) => {
+            const token = window.localStorage.getItem("token");
+            if (!token) { 
+                isLogged = false;
+                <% req.session.isLogged = false; %>
+            }
+            else {
+                if (!result[token]) {
+                    isLogged = false;
+                    <%- req.session.isLogged = false; %>
+                }
+                else {
+                    fetch("/changeSession", {
+                        method: "POST",
+                        body: {
+                            token,
+                            password: JSON.parse(window.localStorage.getItem("identify")).password
+                        }
+                    }).then((res) => res.json()).then((response) => {
+                        if (!response.success) {
+                            swal('failed in back_end', response.message, 'error');
+                        } else {
+                            console.log(`[SESSION_ROUTE]: Token has activated!`);
+                            window.localStorage.setItem("isLogged", 1);
+                            isLogged = true;
+                        }
+                    });
+                }
+            }
+        });
+        
+    </script>
+</head>
+<body class="text-center">
+    <nav class="navbar navbar-dark bg-dark">
+        <a class="navbar-brand" href="#">JWT</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarContext" aria-controls="navbarContext" aria-expanded="false" aria-label="toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Navbar context -->
+
+        <div class="collapse navbar-collapse" id="navbarContext">
+            <ul class="navbar-nav">
+                <li class="nav-item active">
+                    <a href="#" class="nav-link">Home <span class="sr-only">(current)</span></a>
+                </li>
+                
+                <% if (!isLogged) { %>
+                    <li class="nav-item">
+                        <a onclick="login()" class="nav-link">Login</a>
+                    </li>
+                <% } else { %>
+                    <li class="nav-item">
+                        <a onclick="logout()" class="nav-link">Logout</a>
+                    </li>
+                <% } %>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="jumbotron">
+    <form>
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" minlength="8" maxlength="18" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" required aria-describedby="emailInfo">
+            <small id="emailInfo" class="form-text text-muted">We'll never share your email with anyone else!</small>
+        </div>
+        <button onclick="login()" type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+
+
+    <script>
+        function logout() {
+            swal({
+                title: "Are you sure want logout?",
+                text: "You can login but it's need time!",
+                dangerMode: true
+            }).then((clicked) => {
+                if (clicked) {
+                    window.localStorage.removeItem("token");
+                    window.localStorage.removeItem("identify");
+                    window.open("/logout");
+                } else {
+                    swal({
+                        title: "Nice choose!",
+                        text: "Your session will keep save to logged",
+                        icon: "info"
+                    });
+                }
+            });
+        }
+
+        function isEmpty(data) {
+            if (!data || data == "") return true;
+            else return false;
+        }
+
+        function login() {
+            const username = document.getElementById("username").value,
+                  password = document.getElementById("password").value,
+                  email = document.getElementById("email").value;
+            
+            if (window.localStorage.getItem("token") && window.localStorage.getItem("token").length < 345) {
+                return swal({
+                    title: `Sorry ${JSON.parse(window.localStorage.getItem("identify")).userName}` ,
+                    text: "You already have session!",
+                    icon: "info"
+                });
+            }
+            if (isEmpty(username) || isEmpty(password) || isEmpty(email)) {
+                swal('Empty not allowed', 'Enter all form value to register!', 'info');
+            } else {
+            swal({
+                title: "Maintenance Alert",
+                text: "We can't be sure that login is broken or no.",
+                icon: "warning",
+                button: {
+                    text: "Login",
+                    closeModal: false
+                }
+            }).then((clicked) => {
+                if (clicked) {
+                    fetch(`/inputUser?username=${username}&password=${password}&email=${email}`, { method: "POST" })
+                    .then(a => a.json()).then(result => {
+                        if (!result.success) {
+                            return swal('Failed', 'failed because ' + result.message, 'error');
+                        } else {
+                            swal({
+                                title: "Successfuly",
+                                text: "Your session has saved!",
+                                icon: "success"
+                            });
+                            window.localStorage.setItem("token", result.result.token);
+                            window.localStorage.setItem("identify", JSON.stringify(result.result.data));
+                            swal.stopLoading();
+                            swal.close();
+                            window.localStorage.setItem("isLogged", 1);
+                    fetch("/changeSession", {
+                        method: "POST",
+                        body: {
+                            token: result.result.token,
+                            password: JSON.parse(window.localStorage.getItem("identify")).password
+                        }
+                    }).then((res) => res.json()).then((response) => {
+                        if (!response.success) {
+                            swal('failed in back_end', response.message, 'error');
+                        } else {
+                            console.log(`[SESSION_ROUTE]: Token has activated!`);
+                            window.localStorage.setItem("isLogged", 1);
+                            isLogged = true;
+                        }
+                    });
+                        }
+                    });
+                } else {
+                    swal({
+                        title: "Canceled",
+                        text: "You have not press button",
+                        icon: "success"
+                    });
+                    swal.stopLoading();
+                    swal.close();
+                }
+            });
+        }
+        }
+    </script>
+</body>
+</html>
