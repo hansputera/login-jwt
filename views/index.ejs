@@ -19,6 +19,14 @@
                 </li>
                 
                 <% if (!req.session.isLogged) { %>
+                    <script>
+                        const token = window.localStorage.getItem("token");
+                        if (token) {
+                            window.localStorage.removeItem("token");
+                            window.localStorage.removeItem("identify");
+                            console.log('[SESSION_DELETED]: We have delete your local storage!');
+                        }
+                    </script>
                     <li class="nav-item">
                         <a onclick="login()" id="klikitit" class="nav-link">Login</a>
                     </li>
