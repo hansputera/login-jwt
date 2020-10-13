@@ -2,49 +2,6 @@
 <html lang="en">
 <head>
     <%- include("../layout/header.ejs"); %>
-    <script>
-        let isLogged = false;
-        const isLog = window.localStorage.getItem("isLogged");
-        if (!isLog && !window.localStorage.getItem("token")) { 
-            isLogged = false;
-             window.localStorage.setItem("isLogged", 0);
-            <% req.session.isLogged = false; %>
-            
-        }
-        fetch("/session_list?token=<%= config.env.password %>", {
-            method: "POST"
-        }).then((res) => res.json()).then((result) => {
-            const token = window.localStorage.getItem("token");
-            if (!token) { 
-                isLogged = false;
-                <% req.session.isLogged = false; %>
-            }
-            else {
-                if (!result[token]) {
-                    isLogged = false;
-                    <%- req.session.isLogged = false; %>
-                }
-                else {
-                    fetch("/changeSession", {
-                        method: "POST",
-                        body: {
-                            token,
-                            password: JSON.parse(window.localStorage.getItem("identify")).password
-                        }
-                    }).then((res) => res.json()).then((response) => {
-                        if (!response.success) {
-                            swal('failed in back_end', response.message, 'error');
-                        } else {
-                            console.log(`[SESSION_ROUTE]: Token has activated!`);
-                            window.localStorage.setItem("isLogged", 1);
-                            isLogged = true;
-                        }
-                    });
-                }
-            }
-        });
-        
-    </script>
 </head>
 <body class="text-center">
     <nav class="navbar navbar-dark bg-dark">
@@ -61,7 +18,7 @@
                     <a href="#" class="nav-link">Home <span class="sr-only">(current)</span></a>
                 </li>
                 
-                <% if (!isLogged) { %>
+                <% if (!req.session.isLogged) { %>
                     <li class="nav-item">
                         <a onclick="login()" class="nav-link">Login</a>
                     </li>
@@ -121,6 +78,7 @@
         }
 
         function login() {
+            console.log('[LOGIN]: Clicked');
             const username = document.getElementById("username").value,
                   password = document.getElementById("password").value,
                   email = document.getElementById("email").value;
@@ -159,22 +117,6 @@
                             window.localStorage.setItem("identify", JSON.stringify(result.result.data));
                             swal.stopLoading();
                             swal.close();
-                            window.localStorage.setItem("isLogged", 1);
-                    fetch("/changeSession", {
-                        method: "POST",
-                        body: {
-                            token: result.result.token,
-                            password: JSON.parse(window.localStorage.getItem("identify")).password
-                        }
-                    }).then((res) => res.json()).then((response) => {
-                        if (!response.success) {
-                            swal('failed in back_end', response.message, 'error');
-                        } else {
-                            console.log(`[SESSION_ROUTE]: Token has activated!`);
-                            window.localStorage.setItem("isLogged", 1);
-                            isLogged = true;
-                        }
-                    });
                         }
                     });
                 } else {

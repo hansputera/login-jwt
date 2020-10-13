@@ -1,10 +1,7 @@
 import { Router } from "express";
 import moment from "moment";
 import UserController from "../libs/UserController";
-import jwt from "jsonwebtoken";
-import sessionList from "./session.json";
 import config from "../config.json";
-import UserSession from "../libs/UserSession";
 import session from "express-session";
 import { json, urlencoded } from "body-parser";
 const router = Router();
@@ -18,24 +15,6 @@ router.use(session({
     resave: false,
     saveUninitialized: true
 }));
-
-router.post("/session_list", (req, res) => {
-    const token = req.query.token as string;
-    if (!token) {
-        return res.status(403).json({
-            success: false,
-            message: 'Missing body'
-        });
-    } 
-    if (token !== config.env.password) {
-        return res.status(403).json({
-            success: false,
-            message: 'Invalid Password'
-        });
-    } else {
-        res.status(200).json(sessionList);
-    }
-});
 
 router.get("/", (req, res) => {
     res.render(
@@ -73,6 +52,7 @@ router.post("/inputUser", (req, res) => {
             email,
             registeredAt: moment().utcOffset("+0700").format("LLL")
         }).then((x) => {
+            req.session!.isLogged = true;
             res.status(200).json(x);
         }).catch((e) => {
             res.status(200).json(e);
@@ -96,33 +76,6 @@ router.get("/logout", (req, res) => {
             }
         });
     }    
-});
-
-router.post("/changeSession", (req, res) => {
-    try {
-   const token = req.body.token as string;
-   const password = req.body.password as string;
-
-   jwt.verify(token, password);
-   const sessionControll = new UserSession("../routes/session.json");
-   sessionControll._update(token).then((val) => {
-    res.status(200).json({
-        success: val as boolean,
-        result: 'Successfuly updated session'
-    });
-    req.session!.isLogged = true;
-   }).catch((er) => {
-       res.status(200).json({
-           success: false,
-           message: er
-       });
-   });
-    } catch (e) {
-        res.status(200).json({
-            success: false,
-            message: e
-        });
-    }
 });
 
 export = router;

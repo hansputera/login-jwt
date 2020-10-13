@@ -5,10 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 const express_1 = require("express");
 const moment_1 = __importDefault(require("moment"));
 const UserController_1 = __importDefault(require("../libs/UserController"));
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const session_json_1 = __importDefault(require("./session.json"));
 const config_json_1 = __importDefault(require("../config.json"));
-const UserSession_1 = __importDefault(require("../libs/UserSession"));
 const express_session_1 = __importDefault(require("express-session"));
 const body_parser_1 = require("body-parser");
 const router = express_1.Router();
@@ -19,24 +16,6 @@ router.use(express_session_1.default({
     resave: false,
     saveUninitialized: true
 }));
-router.post("/session_list", (req, res) => {
-    const token = req.query.token;
-    if (!token) {
-        return res.status(403).json({
-            success: false,
-            message: 'Missing body'
-        });
-    }
-    if (token !== config_json_1.default.env.password) {
-        return res.status(403).json({
-            success: false,
-            message: 'Invalid Password'
-        });
-    }
-    else {
-        res.status(200).json(session_json_1.default);
-    }
-});
 router.get("/", (req, res) => {
     res.render("index", { req, isLogged: req.session.isLogged, config: config_json_1.default });
 });
@@ -72,6 +51,7 @@ router.post("/inputUser", (req, res) => {
             email,
             registeredAt: moment_1.default().utcOffset("+0700").format("LLL")
         }).then((x) => {
+            req.session.isLogged = true;
             res.status(200).json(x);
         }).catch((e) => {
             res.status(200).json(e);
@@ -93,32 +73,6 @@ router.get("/logout", (req, res) => {
                 ok: true,
                 status: 'Logout'
             }
-        });
-    }
-});
-router.post("/changeSession", (req, res) => {
-    try {
-        const token = req.body.token;
-        const password = req.body.password;
-        jsonwebtoken_1.default.verify(token, password);
-        const sessionControll = new UserSession_1.default("../routes/session.json");
-        sessionControll._update(token).then((val) => {
-            res.status(200).json({
-                success: val,
-                result: 'Successfuly updated session'
-            });
-            req.session.isLogged = true;
-        }).catch((er) => {
-            res.status(200).json({
-                success: false,
-                message: er
-            });
-        });
-    }
-    catch (e) {
-        res.status(200).json({
-            success: false,
-            message: e
         });
     }
 });
