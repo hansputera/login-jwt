@@ -13,7 +13,7 @@ router.use(urlencoded({ extended: false }));
 router.use(session({
     secret: "guy-guy-guy",
     resave: false,
-    saveUninitialized: true
+    saveUninitialized: false
 }));
 
 router.get("/", (req, res) => {
@@ -61,19 +61,17 @@ router.post("/inputUser", (req, res) => {
 });
 
 router.get("/logout", (req, res) => {
-    if (!req.session!.isLogged) return res.status(403).json({
+    if (!req.session) return res.status(403).json({
         success: false,
         message: 'Invalid session!'
     });
     else {
-        req.session!.isLogged = false;
-        res.status(200).json({
-            success: true,
-            result: {
-                failure_code: null,
-                ok: true,
-                status: 'Logout'
-            }
+        req.session!.destroy(function(err: Error) {
+            if (err) return res.status(403).json({
+                success: false,
+                message: err.message
+            });
+            else res.redirect("/");
         });
     }    
 });

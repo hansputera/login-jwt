@@ -14,7 +14,7 @@ router.use(body_parser_1.urlencoded({ extended: false }));
 router.use(express_session_1.default({
     secret: "guy-guy-guy",
     resave: false,
-    saveUninitialized: true
+    saveUninitialized: false
 }));
 router.get("/", (req, res) => {
     res.render("index", { req, isLogged: req.session.isLogged, config: config_json_1.default });
@@ -59,20 +59,20 @@ router.post("/inputUser", (req, res) => {
     }
 });
 router.get("/logout", (req, res) => {
-    if (!req.session.isLogged)
+    if (!req.session)
         return res.status(403).json({
             success: false,
             message: 'Invalid session!'
         });
     else {
-        req.session.isLogged = false;
-        res.status(200).json({
-            success: true,
-            result: {
-                failure_code: null,
-                ok: true,
-                status: 'Logout'
-            }
+        req.session.destroy(function (err) {
+            if (err)
+                return res.status(403).json({
+                    success: false,
+                    message: err.message
+                });
+            else
+                res.redirect("/");
         });
     }
 });

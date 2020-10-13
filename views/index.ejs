@@ -71,8 +71,8 @@
                 if (clicked) {
                     window.localStorage.removeItem("token");
                     window.localStorage.removeItem("identify");
-                    window.open("/logout").close();
-                    window.location.reload();
+                    window.close();
+                    window.open("/logout");
                 } else {
                     swal({
                         title: "Nice choose!",
