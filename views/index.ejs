@@ -21,14 +21,18 @@
                 <% if (!req.session.isLogged) { %>
                     <script>
                         const token = window.localStorage.getItem("token");
-                        if (token) {
+                        const wasLogged = window.localStorage.getItem("hasLogged");
+
+                        if (token && !wasLogged) {
                             window.localStorage.removeItem("token");
                             window.localStorage.removeItem("identify");
                             console.log('[SESSION_DELETED]: We have delete your local storage!');
                         }
+
+                    
                     </script>
                     <li class="nav-item">
-                        <a onclick="login()" id="klikitit" class="nav-link">Login</a>
+                        <a onclick="register()" id="klikitit" class="nav-link">Register</a>
                     </li>
                 <% } else { %>
                     <li class="nav-item">
@@ -42,6 +46,7 @@
     <div class="jumbotron">
     
         <% if (!isLogged) { %>
+        <div id="hasLogged">
         <div class="form-group">
             <label for="username">Username</label>
             <input type="text" id="username" required>
@@ -56,19 +61,145 @@
             <small id="emailInfo" class="form-text text-muted">We'll never share your email with anyone else!</small>
         </div>
         <button onclick="forceLink()" type="submit" class="btn btn-primary">Submit</button>
+    </div>
     <% } else { %>
         <h1>Hi <div class="namaUser"></div></h1>
+        <br />
+        <button type="submit" class="btn btn-danger" onclick="logout()">Logout</button>
     <% } %>
 </div>
 
 
     <script>
+        <% if (!req.session.isLogged) { %>
+                    if (wasLogged == "true") {
+                        document.querySelectorAll("li")[1].innerHTML = `<a onclick="login()" class="nav-link">Login</a>`;
+        
+                            const loginTemp = `
+                            <div class="form-group">
+                                <label for="username">Username</label>
+                                <input type="text" id="username" required>    
+                            </div>
+                            <div class="form-group">
+                                <label for="password">Password</label>
+                                <input type="password" id="password" required>
+                            </div>
+                            <button onclick="login()" type="submit" class="btn btn-primary">Login</button>
+                            `;
+
+                            document.getElementById("hasLogged").innerHTML = loginTemp;
+                        }
+                        <% } %>
+        function isEmpty(data) {
+            if (!data || data == "") return true;
+            else return false;
+        }
+        <% if (req.session.isLogged) { %>
+            document.querySelectorAll("li")[1].innerHTML = `<a onclick="login()" class="nav-link">Login</a>`;
         
         if (window.localStorage.getItem("token")) {
             document.querySelector("[class=\"namaUser\"]").innerHTML = JSON.parse(window.localStorage.getItem("identify")).userName.replace(/\s/gi, "");
         }
+        <% } %>
         function forceLink() {
             document.getElementById("klikitit").click();
+        }
+
+        function login() {
+            const username = document.getElementById("username").value,
+                  password = document.getElementById("password").value;
+
+        if (!window.localStorage.getItem("identify")) {
+            window.localStorage.clear();
+            console.log('Resetting hasLogged!');
+            window.location.reload();
+        }
+         if (isEmpty(username) || isEmpty(password)) {
+             return swal('Empty not allowed', 'Enter all form value to register!', 'error');
+         }
+
+         const identify = JSON.parse(window.localStorage.getItem("identify"));
+         if (identify.userName != username) {
+             return swal('Failed', 'Wrong Username!', 'error');
+         } else if (identify.password != password) {
+             return swal('Failed', 'Wrong Password!', 'error');
+         } else {
+             const token = window.localStorage.getItem("token");
+             if (!token) {
+                return swal({
+                    title: "Failed",
+                    text: "Something was wrong in your local storage!",
+                    icon: "error"
+                }).then((clicked) => {
+                    if (clicked) {
+                        console.log('[LOCAL_STORAGE]: Resetting Data!');
+                        window.localStorage.clear();
+                        // Clearing all data in local storage.
+                        window.close();
+                        window.open("/");
+                    } else {
+                        console.log('[LOCAL_STORAGE]: Resetting Data!');
+                        window.localStorage.clear();
+                        // Clearing all data in local storage.
+                        window.close();
+                        window.open("/");
+                    }
+                });
+             } else {
+                 fetch(`/verify_token?token=${token}&password=${identify.password}`, { method: "POST" })
+                 .then((res) => res.json()).then((result) => {
+                    if (!result.success) {
+                        return swal({
+                    title: "Failed",
+                    text: "Something was wrong in Server!",
+                    icon: "error"
+                }).then((clicked) => {
+                    if (clicked) {
+                        console.log('[LOCAL_STORAGE]: Resetting Data!');
+                        window.localStorage.clear();
+                        // Clearing all data in local storage.
+                        window.close();
+                        window.open("/");
+                    } else {
+                        console.log('[LOCAL_STORAGE]: Resetting Data!');
+                        window.localStorage.clear();
+                        // Clearing all data in local storage.
+                        window.close();
+                        window.open("/");
+                    }
+                });
+                    } else {
+                        fetch(`/granted_login?token=${token}&password=${identify.password}`, {
+                            method: "POST"
+                        }).then((res) => res.json()).then((result_1) => {
+                            console.log('[SYSTEM_LOCAL]: Login has Granted!');
+                            window.close();
+                            window.open("/");
+                        });
+                    }
+                 }).catch(e => {
+                    return swal({
+                    title: "Failed",
+                    text: e,
+                    icon: "error"
+                }).then((clicked) => {
+                    if (clicked) {
+                        console.log('[LOCAL_STORAGE]: Resetting Data!');
+                        window.localStorage.clear();
+                        // Clearing all data in local storage.
+                        window.close();
+                        window.open("/");
+                    } else {
+                        console.log('[LOCAL_STORAGE]: Resetting Data!');
+                        window.localStorage.clear();
+                        // Clearing all data in local storage.
+                        window.close();
+                        window.open("/");
+                    }
+                });
+                 });
+             }
+         }
         }
         function logout() {
             swal({
@@ -77,8 +208,6 @@
                 dangerMode: true
             }).then((clicked) => {
                 if (clicked) {
-                    window.localStorage.removeItem("token");
-                    window.localStorage.removeItem("identify");
                     window.close();
                     window.open("/logout");
                 } else {
@@ -91,12 +220,9 @@
             });
         }
 
-        function isEmpty(data) {
-            if (!data || data == "") return true;
-            else return false;
-        }
+        
 
-        function login() {
+        function register() {
             console.log('[LOGIN]: Clicked');
             const username = document.getElementById("username").value,
                   password = document.getElementById("password").value,
@@ -132,6 +258,7 @@
                                 text: "Your session has saved!",
                                 icon: "success"
                             });
+                            window.localStorage.setItem("hasLogged", true);
                             window.localStorage.setItem("token", result.result.token);
                             window.localStorage.setItem("identify", JSON.stringify(result.result.data));
                             swal.stopLoading();

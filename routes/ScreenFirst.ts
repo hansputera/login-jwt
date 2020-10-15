@@ -4,6 +4,8 @@ import UserController from "../libs/UserController";
 import config from "../config.json";
 import session from "express-session";
 import { json, urlencoded } from "body-parser";
+import { verify } from "jsonwebtoken";
+import { registerData } from "../libs/UserTypes";
 const router = Router();
 
 
@@ -17,9 +19,44 @@ router.use(session({
 }));
 
 router.get("/", (req, res) => {
+    console.log(`[STATUS]: ${req.session!.isLogged}`);
     res.render(
         "index", { req, isLogged: req.session!.isLogged, config }
     );
+});
+
+router.post("/verify_token", (req, res) => {
+    try {
+    const token = req.query.token as string;
+    const password = req.query.password as string;
+
+    if (!token || !password) {
+        return res.json({ success: false, message: "Missing authenticate!" });
+    }
+    const result = verify(token, password);
+    req.session!.isLogged = true;
+    return res.status(200).json({
+        success: true,
+        result
+    });
+}catch(e) {
+    res.status(500).json({ success: false, message: e });
+}
+});
+
+router.post("/granted_login", (req, res) => {
+    try {
+        const result = verify(req.query.token as string, req.query.password as string);
+        return res.status(200).json({
+            success: true,
+            result
+        });
+    } catch(e) {
+        res.status(500).json({
+            success: false,
+            message: e
+        });
+    }
 });
 
 router.post("/inputUser", (req, res) => {
@@ -54,6 +91,7 @@ router.post("/inputUser", (req, res) => {
         }).then((x) => {
             req.session!.isLogged = true;
             res.status(200).json(x);
+            console.log(verify((x as { success: boolean; result: { data: registerData, token: string; }}).result.token, userPassword));
         }).catch((e) => {
             res.status(200).json(e);
         });

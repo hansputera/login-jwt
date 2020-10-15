@@ -2,7 +2,7 @@ import express from "express";
 const app = express();
 
 app.set("view engine", "ejs");
-
+app.use(express.static("public"));
 app.use('/', require("./routes/ScreenFirst"));
 
 const listener = app.listen(process.env.PORT ? process.env.PORT : 7777, () => {

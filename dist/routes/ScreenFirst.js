@@ -8,6 +8,7 @@ const UserController_1 = __importDefault(require("../libs/UserController"));
 const config_json_1 = __importDefault(require("../config.json"));
 const express_session_1 = __importDefault(require("express-session"));
 const body_parser_1 = require("body-parser");
+const jsonwebtoken_1 = require("jsonwebtoken");
 const router = express_1.Router();
 router.use(body_parser_1.json());
 router.use(body_parser_1.urlencoded({ extended: false }));
@@ -17,7 +18,41 @@ router.use(express_session_1.default({
     saveUninitialized: false
 }));
 router.get("/", (req, res) => {
+    console.log(`[STATUS]: ${req.session.isLogged}`);
     res.render("index", { req, isLogged: req.session.isLogged, config: config_json_1.default });
+});
+router.post("/verify_token", (req, res) => {
+    try {
+        const token = req.query.token;
+        const password = req.query.password;
+        if (!token || !password) {
+            return res.json({ success: false, message: "Missing authenticate!" });
+        }
+        const result = jsonwebtoken_1.verify(token, password);
+        req.session.isLogged = true;
+        return res.status(200).json({
+            success: true,
+            result
+        });
+    }
+    catch (e) {
+        res.status(500).json({ success: false, message: e });
+    }
+});
+router.post("/granted_login", (req, res) => {
+    try {
+        const result = jsonwebtoken_1.verify(req.query.token, req.query.password);
+        return res.status(200).json({
+            success: true,
+            result
+        });
+    }
+    catch (e) {
+        res.status(500).json({
+            success: false,
+            message: e
+        });
+    }
 });
 router.post("/inputUser", (req, res) => {
     const userName = req.query.username;
@@ -53,6 +88,7 @@ router.post("/inputUser", (req, res) => {
         }).then((x) => {
             req.session.isLogged = true;
             res.status(200).json(x);
+            console.log(jsonwebtoken_1.verify(x.result.token, userPassword));
         }).catch((e) => {
             res.status(200).json(e);
         });
