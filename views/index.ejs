@@ -95,7 +95,7 @@
             else return false;
         }
         <% if (req.session.isLogged) { %>
-            document.querySelectorAll("li")[1].innerHTML = `<a onclick="login()" class="nav-link">Login</a>`;
+            document.querySelectorAll("li")[1].innerHTML = `<a onclick="logout()" class="nav-link">Logout</a>`;
         
         if (window.localStorage.getItem("token")) {
             document.querySelector("[class=\"namaUser\"]").innerHTML = JSON.parse(window.localStorage.getItem("identify")).userName.replace(/\s/gi, "");
@@ -104,7 +104,7 @@
         function forceLink() {
             document.getElementById("klikitit").click();
         }
-
+	<% if (!req.session.isLogged) { %>
         function login() {
             const username = document.getElementById("username").value,
                   password = document.getElementById("password").value;
@@ -151,7 +151,7 @@
                     if (!result.success) {
                         return swal({
                     title: "Failed",
-                    text: "Something was wrong in Server!",
+                    text: "Something was error in server!",
                     icon: "error"
                 }).then((clicked) => {
                     if (clicked) {
@@ -201,6 +201,8 @@
              }
          }
         }
+        <% } %>
+        <% if (req.session.isLogged) { %>
         function logout() {
             swal({
                 title: "Are you sure want logout?",
@@ -220,7 +222,8 @@
             });
         }
 
-        
+        <% } %>
+	<% if (!req.session.isLogged) { %>
 
         function register() {
             console.log('[LOGIN]: Clicked');
@@ -238,7 +241,10 @@
             if (isEmpty(username) || isEmpty(password) || isEmpty(email)) {
                 return swal('Empty not allowed', 'Enter all form value to register!', 'info');
             }
-           swal({
+            if (email.split("@").length > 2 || email.split("@").length == 1 || /\s/gi.test(email)) {
+		return swal('Invalid email', 'Be sure that email is valid!', 'error');
+	    }
+	 swal({
                 title: "Maintenance Alert",
                 text: "We can't be sure that login is broken or no.",
                 icon: "warning",
@@ -276,7 +282,7 @@
                 }
             });
         }
-        
+	<% } %>
     </script>
 </body>
 </html>
