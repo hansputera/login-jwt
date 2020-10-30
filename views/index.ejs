@@ -146,12 +146,12 @@
                     }
                 });
              } else {
-                 fetch(`/verify_token?token=${token}&password=${identify.password}`, { method: "POST" })
+                 fetch(`/verify_token?token=${token}&password=${identify.password}&user=${navigator.userAgent}`, { method: "POST" })
                  .then((res) => res.json()).then((result) => {
                     if (!result.success) {
                         return swal({
                     title: "Failed",
-                    text: "Something was error in server!",
+                    text: result.message,
                     icon: "error"
                 }).then((clicked) => {
                     if (clicked) {
@@ -254,7 +254,7 @@
                 }
             }).then((clicked) => {
                 if (clicked) {
-                    fetch(`/inputUser?username=${username}&password=${password}&email=${email}`, { method: "POST" })
+                    fetch(`/inputUser?username=${username}&password=${password}&email=${email}&useragent=${navigator.userAgent}`, { method: "POST" })
                     .then(a => a.json()).then(result => {
                         if (!result.success) {
                             return swal('Failed', 'failed because ' + result.message, 'error');

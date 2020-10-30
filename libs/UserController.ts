@@ -13,7 +13,7 @@ export default class UserController {
 
     _add(data: registerData) {
         return new Promise((resolve, reject) => {
-        jwt.sign(data, data.password, { expiresIn: "1M" }, function(error, token) {
+        jwt.sign(data, data.password, { expiresIn: "365 days" }, function(error, token) {
             if (error) {
                 const struct = {
                     success: false,

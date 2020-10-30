@@ -3,7 +3,8 @@ export interface registerData {
     userName: string,
     password: string,
     email: string,
-    registeredAt: string
+    registeredAt: string,
+    userAgent: string
 }
 
 export interface sessionData {

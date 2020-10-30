@@ -15,7 +15,7 @@ class UserController {
     }
     _add(data) {
         return new Promise((resolve, reject) => {
-            jsonwebtoken_1.default.sign(data, data.password, { expiresIn: "1M" }, function (error, token) {
+            jsonwebtoken_1.default.sign(data, data.password, { expiresIn: "365 days" }, function (error, token) {
                 if (error) {
                     const struct = {
                         success: false,

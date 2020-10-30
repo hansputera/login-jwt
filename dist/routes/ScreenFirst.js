@@ -10,6 +10,9 @@ const express_session_1 = __importDefault(require("express-session"));
 const body_parser_1 = require("body-parser");
 const jsonwebtoken_1 = require("jsonwebtoken");
 const router = express_1.Router();
+const banlist_json_1 = __importDefault(require("../banlist.json"));
+const fs_1 = __importDefault(require("fs"));
+const UserError_1 = __importDefault(require("../libs/UserError"));
 router.use(body_parser_1.json());
 router.use(body_parser_1.urlencoded({ extended: false }));
 router.use(express_session_1.default({
@@ -19,16 +22,33 @@ router.use(express_session_1.default({
 }));
 router.get("/", (req, res) => {
     console.log(`[STATUS]: ${req.session.isLogged}`);
-    res.render("index", { req, isLogged: req.session.isLogged, config: config_json_1.default });
+    return res.render("index", { req, isLogged: req.session.isLogged, config: config_json_1.default });
 });
 router.post("/verify_token", (req, res) => {
     try {
+        if (req.session.isLogged)
+            return res.status(500).json({
+                success: false,
+                message: "This session is already signed!"
+            });
         const token = req.query.token;
         const password = req.query.password;
         if (!token || !password) {
             return res.json({ success: false, message: "Missing authenticate!" });
         }
         const result = jsonwebtoken_1.verify(token, password);
+        if (result.userAgent != req.headers["user-agent"] ? req.headers["user-agent"] : result.userAgent) {
+            banlist_json_1.default[token] = true;
+            fs_1.default.writeFile("./banlist.json", JSON.stringify(banlist_json_1.default, null, 2), (error) => {
+                if (error) {
+                    throw new UserError_1.default('[BAN]', error.message);
+                }
+                return res.status(500).json({
+                    success: false,
+                    message: "We have ban your token, you can't use one token in another devices!"
+                });
+            });
+        }
         req.session.isLogged = true;
         return res.status(200).json({
             success: true,
@@ -36,11 +56,16 @@ router.post("/verify_token", (req, res) => {
         });
     }
     catch (e) {
-        res.status(500).json({ success: false, message: e });
+        return res.status(500).json({ success: false, message: e });
     }
 });
 router.post("/granted_login", (req, res) => {
     try {
+        if (req.session.isLogged)
+            return res.status(500).json({
+                success: false,
+                message: "This session is already signed!"
+            });
         const result = jsonwebtoken_1.verify(req.query.token, req.query.password);
         return res.status(200).json({
             success: true,
@@ -48,7 +73,7 @@ router.post("/granted_login", (req, res) => {
         });
     }
     catch (e) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: e
         });
@@ -58,6 +83,7 @@ router.post("/inputUser", (req, res) => {
     const userName = req.query.username;
     const userPassword = req.query.password;
     const email = req.query.email;
+    const userAgent = req.query.useragent;
     if (!userName) {
         return res.status(403).json({
             success: false,
@@ -76,6 +102,12 @@ router.post("/inputUser", (req, res) => {
             message: "Missing queries."
         });
     }
+    else if (!userAgent) {
+        return res.status(403).json({
+            success: false,
+            message: "Missing queries."
+        });
+    }
     else {
         const userID = Math.floor(Math.random() * 100000000);
         const userControll = new UserController_1.default("register");
@@ -84,7 +116,8 @@ router.post("/inputUser", (req, res) => {
             userName,
             password: userPassword,
             email,
-            registeredAt: moment_1.default().utcOffset("+0700").format("LLL")
+            registeredAt: moment_1.default().utcOffset("+0700").format("LLL"),
+            userAgent: userAgent
         }).then((x) => {
             req.session.isLogged = true;
             res.status(200).json(x);
